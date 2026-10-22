@@ -37,7 +37,7 @@ Credentials come from the environment (see [`.env.example`](.env.example)). `WEB
 
 Reddit posts go through an installed app (redirect uri `http://localhost:8080`, no secret), which any account can authorize. Run `REDDIT_CLIENT_ID=... bun scripts/reddit-auth.ts`, open the printed link while logged in as the posting account, and set the printed `REDDIT_REFRESH_TOKEN`. The account must be allowed to post in the subreddit.
 
-X posts go through the x.com web API with [bird](https://github.com/steipete/bird), not the paid API. They stop working when the session cookies expire or X changes its web client.
+X posts go through the x.com web API with [bird](https://github.com/steipete/bird), not the paid API. Each request carries an `x-client-transaction-id` signed the way the x.com web app does it ([x-client-transaction-id](https://github.com/Lqm1/x-client-transaction-id)); with bird's random one, X rejects posts as automated (error 226). Posting stops when the session cookies expire or X changes its web client.
 
 `GET /v1/health` lists the targets that are on.
 
