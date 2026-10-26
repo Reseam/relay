@@ -2,6 +2,7 @@ import type { ApiEvent } from "./api";
 import type { Announced } from "./announced";
 import type { Config, Settings } from "./config";
 import { repositoriesOf, type Event } from "./forgejo";
+import { releaseNotes } from "./notes";
 import { toNotice } from "./notice";
 import { listedNotes, toRelease, USER_FACING, type Release, type Timing } from "./release";
 import { discordFeed, discordReleases, discordRequests } from "./targets/discord";
@@ -54,7 +55,7 @@ export function createRelay(settings: Settings, feeds: Feeds, announced: Announc
   async function publish(release: Release) {
     const notes = await listedNotes(fetcher, release, timing);
     const kind = release.prerelease ? "prerelease" : notes === undefined || USER_FACING.test(notes) ? "release" : "maintenance";
-    post({ kind, title: `${release.product} ${release.tag}`, body: release.notes, url: release.page.replace("{version}", release.version) });
+    post({ kind, title: `${release.product} ${release.tag}`, body: releaseNotes(notes ?? release.notes), url: release.page.replace("{version}", release.version) });
   }
 
   return {

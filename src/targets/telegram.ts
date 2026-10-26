@@ -23,7 +23,7 @@ export function telegramReleases(fetcher: typeof fetch, token: string, chat: Tel
       send(fetcher, token, chat, [
         `<b>${escape(item.title)}</b>`,
         "",
-        ...item.body.split("\n").map(escape),
+        ...item.body.split("\n").map((line) => escape(line).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")),
         "",
         link(linkLabel(item), item.url),
       ]),
