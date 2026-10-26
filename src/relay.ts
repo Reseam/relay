@@ -82,8 +82,10 @@ export function createRelay(settings: Settings, feeds: Feeds, announced: Announc
         post({ kind: "announcement", title, body: content ?? "", url: settings.api.announcement_page.replace("{id}", String(id)) });
         return;
       }
-      const { id, title, body, app, status } = event.request;
-      const notice = { title, body: body ?? "", app, hidden: status === "hidden", url: settings.api.request_page.replace("{id}", String(id)) };
+      const page = settings.api.request_page.replace("{id}", String(event.request.id));
+      const notice = event.type === "comment"
+        ? { title: `Comment on “${event.request.title}”`, body: event.comment.body, app: null, hidden: event.comment.hidden, url: page }
+        : { title: event.request.title, body: event.request.body ?? "", app: event.request.app, hidden: event.request.status === "hidden", url: page };
       for (const target of feeds.requests) enqueue(target, notice);
     },
 
