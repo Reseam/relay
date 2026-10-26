@@ -1,10 +1,17 @@
+import type { Platform } from "../config";
 import type { Notice } from "../notice";
 
-export type Announcement = { product: string; tag: string; notes: string; url: string };
+export type Post = { kind: "release" | "prerelease" | "maintenance" | "announcement"; title: string; body: string; url: string };
+export type RequestNotice = { title: string; body: string; app: string | null; hidden: boolean; url: string };
 
 export type Target<T> = { name: string; send(item: T): Promise<void> };
 export type FeedTarget = Target<Notice>;
-export type ReleaseTarget = Target<Announcement>;
+export type PostTarget = Target<Post> & { platform: Platform };
+export type RequestTarget = Target<RequestNotice>;
+
+export function linkLabel(post: Post) {
+  return post.kind === "announcement" ? "Read more" : "Release notes";
+}
 
 const MAX_ATTEMPTS = 3;
 

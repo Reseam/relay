@@ -3,8 +3,23 @@
 exclude = []
 
 [releases]
-prereleases = false
+# Targets that also announce prereleases, and releases with no new features or fixes: any of "discord", "telegram", "reddit", "x".
+prereleases = ["discord", "telegram"]
+maintenance = ["discord", "telegram"]
 
-# Repositories whose published releases go to the releases feed, with the name used in posts.
-[releases.repos]
-"reseam/patches" = "Reseam Patches"
+# Repositories whose published releases are posted: the name used in posts, the index that must list a release
+# before it is posted, and the page posts link to ({version} is the tag without its leading v).
+[releases.repos."reseam/patches"]
+name = "Reseam Patches"
+index = "https://api.reseam.app/patches.json"
+page = "https://reseam.app/updates/patches/{version}/"
+
+[releases.repos."reseam/manager"]
+name = "Reseam Manager"
+index = "https://api.reseam.app/manager.json"
+page = "https://reseam.app/updates/manager/{version}/"
+
+# Pages that posts about announcements and requests from the Reseam API link to.
+[api]
+announcement_page = "https://reseam.app/updates/news/{id}/"
+request_page = "https://reseam.app/requests/?id={id}"

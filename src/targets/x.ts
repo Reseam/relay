@@ -1,7 +1,7 @@
 import { TwitterClient, type TwitterClientOptions } from "@steipete/bird";
 import { ClientTransaction, fetchXDocument } from "x-client-transaction-id";
 import type { Config } from "../config";
-import type { ReleaseTarget } from "./http";
+import type { PostTarget } from "./http";
 
 type XConfig = NonNullable<Config["x"]>;
 
@@ -24,14 +24,16 @@ class WebClient extends TwitterClient {
 }
 
 // Posts as the logged-in web session, so it breaks when the cookies expire or X changes its web API.
-export function xReleases(config: XConfig): ReleaseTarget {
+export function xReleases(config: XConfig): PostTarget {
   const cookies = { authToken: config.authToken, ct0: config.ct0, cookieHeader: null, source: "env" };
   return {
     name: "x",
-    async send(release) {
+    platform: "x",
+    async send(item) {
       // The signing keys live in the x.com page and rotate, so they are read fresh for each post.
       const client = new WebClient({ cookies }, await ClientTransaction.create(await fetchXDocument()));
-      const result = await client.tweet(`${release.product} ${release.tag} is out.\n\n${release.url}`);
+      const headline = item.kind === "announcement" ? item.title : `${item.title} is out.`;
+      const result = await client.tweet(`${headline}\n\n${item.url}`);
       if (!result.success) throw new Error(result.error);
     },
   };

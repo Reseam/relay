@@ -1,12 +1,12 @@
 import type { Config } from "../config";
-import { request, type ReleaseTarget } from "./http";
+import { linkLabel, request, type PostTarget } from "./http";
 
 type RedditConfig = NonNullable<Config["reddit"]>;
 type Token = { value: string; expiresAt: number };
 
 export const USER_AGENT = "server:app.reseam.relay:1.0";
 
-export function redditReleases(fetcher: typeof fetch, config: RedditConfig): ReleaseTarget {
+export function redditReleases(fetcher: typeof fetch, config: RedditConfig): PostTarget {
   let token: Token | undefined;
 
   async function accessToken() {
@@ -26,7 +26,8 @@ export function redditReleases(fetcher: typeof fetch, config: RedditConfig): Rel
 
   return {
     name: "reddit",
-    async send(release) {
+    platform: "reddit",
+    async send(item) {
       const response = await request(fetcher, "https://oauth.reddit.com/api/submit", {
         method: "POST",
         headers: { Authorization: `Bearer ${await accessToken()}`, "User-Agent": USER_AGENT },
@@ -34,8 +35,8 @@ export function redditReleases(fetcher: typeof fetch, config: RedditConfig): Rel
           sr: config.subreddit,
           kind: "self",
           api_type: "json",
-          title: `${release.product} ${release.tag}`,
-          text: `${release.notes}\n\n[Release notes](${release.url})`,
+          title: item.title,
+          text: `${item.body}\n\n[${linkLabel(item)}](${item.url})`,
         }),
       });
       // Reddit reports a rejected post (flair required, rate limit, banned word) as 200 with errors.

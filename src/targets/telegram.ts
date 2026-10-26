@@ -1,6 +1,6 @@
 import type { TelegramChat } from "../config";
 import type { Notice, Segment } from "../notice";
-import { request, type FeedTarget, type ReleaseTarget } from "./http";
+import { linkLabel, request, type FeedTarget, type PostTarget } from "./http";
 
 const MESSAGE_LENGTH = 4096;
 
@@ -15,16 +15,17 @@ export function telegramFeed(fetcher: typeof fetch, token: string, chat: Telegra
   };
 }
 
-export function telegramReleases(fetcher: typeof fetch, token: string, chat: TelegramChat): ReleaseTarget {
+export function telegramReleases(fetcher: typeof fetch, token: string, chat: TelegramChat): PostTarget {
   return {
     name: "telegram releases",
-    send: (release) =>
+    platform: "telegram",
+    send: (item) =>
       send(fetcher, token, chat, [
-        `<b>${escape(`${release.product} ${release.tag}`)}</b>`,
+        `<b>${escape(item.title)}</b>`,
         "",
-        ...release.notes.split("\n").map(escape),
+        ...item.body.split("\n").map(escape),
         "",
-        link("Release notes", release.url),
+        link(linkLabel(item), item.url),
       ]),
   };
 }

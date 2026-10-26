@@ -1,5 +1,5 @@
 import type { Notice, Segment, Tone } from "../notice";
-import { request, type FeedTarget, type ReleaseTarget } from "./http";
+import { request, type FeedTarget, type PostTarget, type RequestTarget } from "./http";
 
 type Embed = {
   title: string;
@@ -25,15 +25,32 @@ export function discordFeed(fetcher: typeof fetch, webhook: string): FeedTarget 
   };
 }
 
-export function discordReleases(fetcher: typeof fetch, webhook: string): ReleaseTarget {
+export function discordReleases(fetcher: typeof fetch, webhook: string): PostTarget {
   return {
     name: "discord releases",
-    send: (release) =>
+    platform: "discord",
+    send: (item) =>
       post(fetcher, webhook, {
-        title: `${release.product} ${release.tag}`,
-        url: release.url,
-        description: truncate(release.notes, 4096),
-        color: COLORS.positive,
+        title: truncate(item.title, 256),
+        url: item.url,
+        description: truncate(item.body, 4096),
+        color: item.kind === "announcement" ? COLORS.neutral : COLORS.positive,
+      }),
+  };
+}
+
+export function discordRequests(fetcher: typeof fetch, webhook: string): RequestTarget {
+  return {
+    name: "discord requests",
+    send: (notice) =>
+      post(fetcher, webhook, {
+        title: truncate(notice.title, 256),
+        url: notice.url,
+        description: truncate(
+          [notice.body, notice.app && `App: ${notice.app}`, notice.hidden && "Hidden by screening"].filter(Boolean).join("\n\n"),
+          4096,
+        ),
+        color: notice.hidden ? COLORS.negative : COLORS.neutral,
       }),
   };
 }

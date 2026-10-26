@@ -1,16 +1,24 @@
 import { Type, type Static } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 
+const PlatformSchema = Type.Union([Type.Literal("discord"), Type.Literal("telegram"), Type.Literal("reddit"), Type.Literal("x")]);
+
 const SettingsSchema = Type.Object({
   everything: Type.Object({
     exclude: Type.Array(Type.String(), { default: [] }),
   }, { default: {} }),
   releases: Type.Object({
-    repos: Type.Record(Type.String(), Type.String(), { default: {} }),
-    prereleases: Type.Boolean({ default: false }),
+    repos: Type.Record(Type.String(), Type.Object({ name: Type.String(), index: Type.String(), page: Type.String() }), { default: {} }),
+    prereleases: Type.Array(PlatformSchema, { default: [] }),
+    maintenance: Type.Array(PlatformSchema, { default: [] }),
   }, { default: {} }),
+  api: Type.Object({
+    announcement_page: Type.String(),
+    request_page: Type.String(),
+  }),
 });
 
+export type Platform = Static<typeof PlatformSchema>;
 export type Settings = Static<typeof SettingsSchema>;
 
 export type TelegramChat = { chatId: string; threadId?: string };
@@ -19,8 +27,9 @@ export type Config = {
   port: number;
   dbPath: string;
   webhookSecret: string;
+  apiSecret?: string;
   settings: Settings;
-  discord: { feed?: string; releases?: string };
+  discord: { feed?: string; releases?: string; requests?: string };
   telegram?: { token: string; feed?: TelegramChat; releases?: TelegramChat };
   reddit?: { clientId: string; clientSecret: string; refreshToken: string; subreddit: string };
   x?: { authToken: string; ct0: string };
@@ -41,8 +50,9 @@ export async function readConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     port: Number(env.PORT || 4100),
     dbPath: env.DB_PATH || "data/relay.db",
     webhookSecret,
+    apiSecret: env.API_SECRET || undefined,
     settings: parseSettings(await Bun.file(env.CONFIG_PATH || "config.toml").text()),
-    discord: { feed: env.DISCORD_FEED_WEBHOOK, releases: env.DISCORD_RELEASES_WEBHOOK },
+    discord: { feed: env.DISCORD_FEED_WEBHOOK, releases: env.DISCORD_RELEASES_WEBHOOK, requests: env.DISCORD_REQUESTS_WEBHOOK },
     telegram: env.TELEGRAM_BOT_TOKEN
       ? {
           token: env.TELEGRAM_BOT_TOKEN,

@@ -1,4 +1,6 @@
+import { Value } from "@sinclair/typebox/value";
 import { Elysia } from "elysia";
+import { ApiEventSchema } from "./api";
 import type { Config } from "./config";
 import { verifySignature, type Event } from "./forgejo";
 import type { Relay } from "./relay";
@@ -17,6 +19,19 @@ export function createApp({ config, relay, version }: AppOptions) {
         }
         // Forgejo gives up on a delivery after a few seconds, so posting happens after the reply.
         relay.deliver({ type: headers["x-forgejo-event-type"], payload: JSON.parse(body) } as Event);
+        return status(202, { ok: true });
+      },
+      { parse: "none" },
+    )
+    .post(
+      "/v1/api",
+      async ({ request, headers, status }) => {
+        if (!config.apiSecret) return status(503, { error: "API_SECRET is not configured" });
+        const body = await request.text();
+        if (!verifySignature(config.apiSecret, body, headers["x-reseam-signature"] ?? "")) {
+          return status(401, { error: "Invalid signature" });
+        }
+        relay.receive(Value.Parse(ApiEventSchema, JSON.parse(body)));
         return status(202, { ok: true });
       },
       { parse: "none" },
