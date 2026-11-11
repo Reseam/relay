@@ -5,27 +5,35 @@ import { repositoriesOf, type Event } from "./forgejo";
 import { releaseNotes } from "./notes";
 import { toNotice } from "./notice";
 import { listedNotes, toRelease, USER_FACING, type Release, type Timing } from "./release";
-import { discordFeed, discordReleases, discordRequests } from "./targets/discord";
+import { discordFeed, discordPosts, discordRequests } from "./targets/discord";
 import type { FeedTarget, Post, PostTarget, RequestTarget, Target } from "./targets/http";
 import { redditReleases } from "./targets/reddit";
-import { telegramFeed, telegramReleases } from "./targets/telegram";
+import { telegramFeed, telegramPosts } from "./targets/telegram";
 import { xReleases } from "./targets/x";
 
-export type Feeds = { everything: FeedTarget[]; posts: PostTarget[]; requests: RequestTarget[] };
+export type Feeds = { everything: FeedTarget[]; releases: PostTarget[]; announcements: PostTarget[]; requests: RequestTarget[] };
 export type Relay = ReturnType<typeof createRelay>;
 
 export function buildFeeds(config: Config, fetcher: typeof fetch): Feeds {
-  const { discord, telegram, reddit, x } = config;
+  const { discord, telegram } = config;
+  const reddit = config.reddit && redditReleases(fetcher, config.reddit);
+  const x = config.x && xReleases(config.x);
   return {
     everything: [
       discord.feed && discordFeed(fetcher, discord.feed),
       telegram?.feed && telegramFeed(fetcher, telegram.token, telegram.feed),
     ].filter((target) => !!target),
-    posts: [
-      discord.releases && discordReleases(fetcher, discord.releases),
-      telegram?.releases && telegramReleases(fetcher, telegram.token, telegram.releases),
-      reddit && redditReleases(fetcher, reddit),
-      x && xReleases(x),
+    releases: [
+      discord.releases && discordPosts(fetcher, "discord releases", discord.releases),
+      telegram?.releases && telegramPosts(fetcher, "telegram releases", telegram.token, telegram.releases),
+      reddit,
+      x,
+    ].filter((target) => !!target),
+    announcements: [
+      discord.announcements && discordPosts(fetcher, "discord announcements", discord.announcements),
+      telegram?.announcements && telegramPosts(fetcher, "telegram announcements", telegram.token, telegram.announcements),
+      reddit,
+      x,
     ].filter((target) => !!target),
     requests: [discord.requests && discordRequests(fetcher, discord.requests)].filter((target) => !!target),
   };
@@ -48,18 +56,18 @@ export function createRelay(settings: Settings, feeds: Feeds, announced: Announc
       : kind === "maintenance" ? settings.releases.maintenance.includes(target.platform)
       : true;
 
-  function post(item: Post) {
-    for (const target of feeds.posts.filter((target) => allowed(item.kind, target))) enqueue(target, item);
+  function post(targets: PostTarget[], item: Post) {
+    for (const target of targets.filter((target) => allowed(item.kind, target))) enqueue(target, item);
   }
 
   async function publish(release: Release) {
     const notes = await listedNotes(fetcher, release, timing);
     const kind = release.prerelease ? "prerelease" : notes === undefined || USER_FACING.test(notes) ? "release" : "maintenance";
-    post({ kind, title: `${release.product} ${release.tag}`, body: releaseNotes(notes ?? release.notes), url: release.page.replace("{version}", release.version) });
+    post(feeds.releases, { kind, title: `${release.product} ${release.tag}`, body: releaseNotes(notes ?? release.notes), url: release.page.replace("{version}", release.version) });
   }
 
   return {
-    targets: [...feeds.everything, ...feeds.posts, ...feeds.requests].map((target) => target.name),
+    targets: [...new Set([...feeds.everything, ...feeds.releases, ...feeds.announcements, ...feeds.requests].map((target) => target.name))],
 
     deliver(event: Event) {
       const repositories = repositoriesOf(event);
@@ -79,7 +87,7 @@ export function createRelay(settings: Settings, feeds: Feeds, announced: Announc
     receive(event: ApiEvent) {
       if (event.type === "announcement") {
         const { id, title, content } = event.announcement;
-        post({ kind: "announcement", title, body: content ?? "", url: settings.api.announcement_page.replace("{id}", String(id)) });
+        post(feeds.announcements, { kind: "announcement", title, body: content ?? "", url: settings.api.announcement_page.replace("{id}", String(id)) });
         return;
       }
       const page = settings.api.request_page.replace("{id}", String(event.request.id));

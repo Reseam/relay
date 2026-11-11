@@ -15,9 +15,9 @@ export function telegramFeed(fetcher: typeof fetch, token: string, chat: Telegra
   };
 }
 
-export function telegramReleases(fetcher: typeof fetch, token: string, chat: TelegramChat): PostTarget {
+export function telegramPosts(fetcher: typeof fetch, name: string, token: string, chat: TelegramChat): PostTarget {
   return {
-    name: "telegram releases",
+    name,
     platform: "telegram",
     send: (item) =>
       send(fetcher, token, chat, [

@@ -25,9 +25,9 @@ export function discordFeed(fetcher: typeof fetch, webhook: string): FeedTarget 
   };
 }
 
-export function discordReleases(fetcher: typeof fetch, webhook: string): PostTarget {
+export function discordPosts(fetcher: typeof fetch, name: string, webhook: string): PostTarget {
   return {
-    name: "discord releases",
+    name,
     platform: "discord",
     send: (item) =>
       post(fetcher, webhook, {

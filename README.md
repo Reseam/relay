@@ -7,7 +7,7 @@
 Posts what happens on [git.reseam.app](https://git.reseam.app) and in the Reseam API to Reseam's socials. One Forgejo org webhook sends every event here, the API sends new announcements and requests, and Relay fans them out:
 
 - **Everything.** Pushes, tags, issues, pull requests, reviews, comments, wiki edits, packages and CI runs, to Discord and Telegram.
-- **Releases and announcements.** Published releases of the repositories listed in `config.toml`, and announcements from the API, to Discord, Telegram, Reddit and X. Posts link to the entry's page on reseam.app.
+- **Releases and announcements.** Published releases of the repositories listed in `config.toml`, and announcements from the API, to Discord, Telegram, Reddit and X. Announcements have their own Discord channel and Telegram topic. Posts link to the entry's page on reseam.app.
 - **Requests.** New patch requests from the API, to a Discord moderation channel.
 
 A release is posted once the repository's index (`patches.json`, `manager.json`) lists it, so the link and Reseam Manager already show it. Relay checks every 20 seconds and posts anyway after 15 minutes. A release whose notes have no `feat`, `fix` or `perf` line counts as maintenance.
@@ -40,8 +40,8 @@ Credentials come from the environment (see [`.env.example`](.env.example)). `WEB
 
 | Target | Variables |
 |---|---|
-| Discord | `DISCORD_FEED_WEBHOOK`, `DISCORD_RELEASES_WEBHOOK`, `DISCORD_REQUESTS_WEBHOOK` (moderation channel) |
-| Telegram | `TELEGRAM_BOT_TOKEN` with `TELEGRAM_FEED_CHAT` / `TELEGRAM_RELEASES_CHAT`, optional `*_THREAD` for a forum topic |
+| Discord | `DISCORD_FEED_WEBHOOK`, `DISCORD_RELEASES_WEBHOOK`, `DISCORD_ANNOUNCEMENTS_WEBHOOK`, `DISCORD_REQUESTS_WEBHOOK` (moderation channel) |
+| Telegram | `TELEGRAM_BOT_TOKEN` with `TELEGRAM_FEED_CHAT` / `TELEGRAM_RELEASES_CHAT` / `TELEGRAM_ANNOUNCEMENTS_CHAT`, optional `*_THREAD` for a forum topic |
 | Reddit | `REDDIT_CLIENT_ID`, `REDDIT_REFRESH_TOKEN`, optional `REDDIT_CLIENT_SECRET`, `REDDIT_SUBREDDIT` (default `reseamapp`) |
 | X | `X_AUTH_TOKEN`, `X_CT0`: cookies of a logged-in x.com session |
 

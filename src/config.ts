@@ -29,8 +29,8 @@ export type Config = {
   webhookSecret: string;
   apiSecret?: string;
   settings: Settings;
-  discord: { feed?: string; releases?: string; requests?: string };
-  telegram?: { token: string; feed?: TelegramChat; releases?: TelegramChat };
+  discord: { feed?: string; releases?: string; announcements?: string; requests?: string };
+  telegram?: { token: string; feed?: TelegramChat; releases?: TelegramChat; announcements?: TelegramChat };
   reddit?: { clientId: string; clientSecret: string; refreshToken: string; subreddit: string };
   x?: { authToken: string; ct0: string };
 };
@@ -52,12 +52,18 @@ export async function readConfig(env: NodeJS.ProcessEnv = process.env): Promise<
     webhookSecret,
     apiSecret: env.API_SECRET || undefined,
     settings: parseSettings(await Bun.file(env.CONFIG_PATH || "config.toml").text()),
-    discord: { feed: env.DISCORD_FEED_WEBHOOK, releases: env.DISCORD_RELEASES_WEBHOOK, requests: env.DISCORD_REQUESTS_WEBHOOK },
+    discord: {
+      feed: env.DISCORD_FEED_WEBHOOK,
+      releases: env.DISCORD_RELEASES_WEBHOOK,
+      announcements: env.DISCORD_ANNOUNCEMENTS_WEBHOOK,
+      requests: env.DISCORD_REQUESTS_WEBHOOK,
+    },
     telegram: env.TELEGRAM_BOT_TOKEN
       ? {
           token: env.TELEGRAM_BOT_TOKEN,
           feed: chat(env.TELEGRAM_FEED_CHAT, env.TELEGRAM_FEED_THREAD),
           releases: chat(env.TELEGRAM_RELEASES_CHAT, env.TELEGRAM_RELEASES_THREAD),
+          announcements: chat(env.TELEGRAM_ANNOUNCEMENTS_CHAT, env.TELEGRAM_ANNOUNCEMENTS_THREAD),
         }
       : undefined,
     reddit: reddit && {
