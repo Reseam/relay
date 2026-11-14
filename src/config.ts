@@ -31,7 +31,7 @@ export type Config = {
   settings: Settings;
   discord: { feed?: string; releases?: string; announcements?: string; requests?: string };
   telegram?: { token: string; feed?: TelegramChat; releases?: TelegramChat; announcements?: TelegramChat };
-  reddit?: { clientId: string; clientSecret: string; refreshToken: string; subreddit: string };
+  reddit?: { session: string; subreddit: string };
   x?: { authToken: string; ct0: string };
 };
 
@@ -43,7 +43,6 @@ export async function readConfig(env: NodeJS.ProcessEnv = process.env): Promise<
   const webhookSecret = env.WEBHOOK_SECRET;
   if (!webhookSecret) throw new Error("WEBHOOK_SECRET is required");
 
-  const reddit = group(env, ["REDDIT_CLIENT_ID", "REDDIT_REFRESH_TOKEN"]);
   const x = group(env, ["X_AUTH_TOKEN", "X_CT0"]);
 
   return {
@@ -66,12 +65,7 @@ export async function readConfig(env: NodeJS.ProcessEnv = process.env): Promise<
           announcements: chat(env.TELEGRAM_ANNOUNCEMENTS_CHAT, env.TELEGRAM_ANNOUNCEMENTS_THREAD),
         }
       : undefined,
-    reddit: reddit && {
-      clientId: reddit.REDDIT_CLIENT_ID,
-      clientSecret: env.REDDIT_CLIENT_SECRET ?? "",
-      refreshToken: reddit.REDDIT_REFRESH_TOKEN,
-      subreddit: env.REDDIT_SUBREDDIT || "reseamapp",
-    },
+    reddit: env.REDDIT_SESSION ? { session: env.REDDIT_SESSION, subreddit: env.REDDIT_SUBREDDIT || "reseamapp" } : undefined,
     x: x && { authToken: x.X_AUTH_TOKEN, ct0: x.X_CT0 },
   };
 }

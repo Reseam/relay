@@ -42,10 +42,10 @@ Credentials come from the environment (see [`.env.example`](.env.example)). `WEB
 |---|---|
 | Discord | `DISCORD_FEED_WEBHOOK`, `DISCORD_RELEASES_WEBHOOK`, `DISCORD_ANNOUNCEMENTS_WEBHOOK`, `DISCORD_REQUESTS_WEBHOOK` (moderation channel) |
 | Telegram | `TELEGRAM_BOT_TOKEN` with `TELEGRAM_FEED_CHAT` / `TELEGRAM_RELEASES_CHAT` / `TELEGRAM_ANNOUNCEMENTS_CHAT`, optional `*_THREAD` for a forum topic |
-| Reddit | `REDDIT_CLIENT_ID`, `REDDIT_REFRESH_TOKEN`, optional `REDDIT_CLIENT_SECRET`, `REDDIT_SUBREDDIT` (default `reseamapp`) |
+| Reddit | `REDDIT_SESSION`: the `reddit_session` cookie of a logged-in reddit.com session; optional `REDDIT_SUBREDDIT` (default `reseamapp`) |
 | X | `X_AUTH_TOKEN`, `X_CT0`: cookies of a logged-in x.com session |
 
-Reddit posts go through an installed app (redirect uri `http://localhost:8080`, no secret), which any account can authorize. Run `REDDIT_CLIENT_ID=... bun scripts/reddit-auth.ts`, open the printed link while logged in as the posting account, and set the printed `REDDIT_REFRESH_TOKEN`. The account must be allowed to post in the subreddit.
+Reddit posts go through the reddit.com web session with [impit](https://github.com/apify/impit), because Reddit no longer issues API apps. Reddit blocks the session unless requests carry a browser's TLS fingerprint (impit sends Chrome's) and the session was created from the server's own IP: log in through an SSH SOCKS tunnel to the server (`ssh -N -D 1080 <server>`, then a browser profile with `--proxy-server=socks5://127.0.0.1:1080`) and copy `reddit_session`. The account must be allowed to post in the subreddit. Posting stops when the session ends.
 
 X posts go through the x.com web API with [bird](https://github.com/steipete/bird), not the paid API. Each request carries an `x-client-transaction-id` signed the way the x.com web app does it ([x-client-transaction-id](https://github.com/Lqm1/x-client-transaction-id)); with bird's random one, X rejects posts as automated (error 226). Posting stops when the session cookies expire or X changes its web client.
 

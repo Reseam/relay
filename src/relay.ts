@@ -16,7 +16,7 @@ export type Relay = ReturnType<typeof createRelay>;
 
 export function buildFeeds(config: Config, fetcher: typeof fetch): Feeds {
   const { discord, telegram } = config;
-  const reddit = config.reddit && redditReleases(fetcher, config.reddit);
+  const reddit = config.reddit && redditReleases(config.reddit);
   const x = config.x && xReleases(config.x);
   return {
     everything: [

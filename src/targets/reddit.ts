@@ -1,36 +1,33 @@
+import { Impit, type RequestInit } from "impit";
 import type { Config } from "../config";
-import { linkLabel, request, type PostTarget } from "./http";
+import { linkLabel, type PostTarget } from "./http";
 
 type RedditConfig = NonNullable<Config["reddit"]>;
-type Token = { value: string; expiresAt: number };
 
-export const USER_AGENT = "server:app.reseam.relay:1.0";
+// Posts as the logged-in web session, since Reddit no longer issues API apps. Reddit blocks the session
+// unless the request has a browser's TLS fingerprint and the session was created from the server's IP;
+// posting stops when the session ends.
+export function redditReleases(config: RedditConfig): PostTarget {
+  const impit = new Impit({ browser: "chrome" });
+  const cookie = `reddit_session=${config.session}`;
 
-export function redditReleases(fetcher: typeof fetch, config: RedditConfig): PostTarget {
-  let token: Token | undefined;
-
-  async function accessToken() {
-    if (token && token.expiresAt > Date.now()) return token.value;
-    const response = await request(fetcher, "https://www.reddit.com/api/v1/access_token", {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${config.clientId}:${config.clientSecret}`)}`,
-        "User-Agent": USER_AGENT,
-      },
-      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: config.refreshToken }),
-    });
-    const { access_token, expires_in } = (await response.json()) as { access_token: string; expires_in: number };
-    token = { value: access_token, expiresAt: Date.now() + (expires_in - 60) * 1000 };
-    return token.value;
+  async function call<T>(url: string, init: RequestInit = {}): Promise<T> {
+    const response = await impit.fetch(url, { ...init, headers: { Cookie: cookie, ...init.headers } });
+    const text = await response.text();
+    if (!response.ok || !text.startsWith("{")) {
+      throw new Error(`reddit answered ${response.status}: ${text.slice(0, 300)}`);
+    }
+    return JSON.parse(text) as T;
   }
 
   return {
     name: "reddit",
     platform: "reddit",
     async send(item) {
-      const response = await request(fetcher, "https://oauth.reddit.com/api/submit", {
+      const me = await call<{ data: { modhash: string } }>("https://www.reddit.com/api/me.json");
+      const { json } = await call<{ json: { errors: string[][] } }>("https://www.reddit.com/api/submit", {
         method: "POST",
-        headers: { Authorization: `Bearer ${await accessToken()}`, "User-Agent": USER_AGENT },
+        headers: { "X-Modhash": me.data.modhash },
         body: new URLSearchParams({
           sr: config.subreddit,
           kind: "self",
@@ -40,7 +37,6 @@ export function redditReleases(fetcher: typeof fetch, config: RedditConfig): Pos
         }),
       });
       // Reddit reports a rejected post (flair required, rate limit, banned word) as 200 with errors.
-      const { json } = (await response.json()) as { json: { errors: string[][] } };
       if (json.errors.length) throw new Error(`reddit rejected the post: ${JSON.stringify(json.errors)}`);
     },
   };
