@@ -1,7 +1,8 @@
 import type { Platform } from "../config";
+import type { Media } from "../notes";
 import type { Notice } from "../notice";
 
-export type Post = { kind: "release" | "prerelease" | "maintenance" | "announcement"; title: string; body: string; url: string };
+export type Post = { kind: "release" | "prerelease" | "maintenance" | "announcement"; title: string; body: string; url: string; media: Media[] };
 export type RequestNotice = { title: string; body: string; app: string | null; hidden: boolean; url: string };
 
 export type Target<T> = { name: string; send(item: T): Promise<void> };

@@ -10,7 +10,7 @@ Posts what happens on [git.reseam.app](https://git.reseam.app) and in the Reseam
 - **Releases and announcements.** Published releases of the repositories listed in `config.toml`, and announcements from the API, to Discord, Telegram, Reddit and X. Announcements have their own Discord channel and Telegram topic. Posts link to the entry's page on reseam.app.
 - **Requests.** New patch requests from the API, to a Discord moderation channel.
 
-A release is posted once the repository's index (`patches.json`, `manager.json`) lists it, so the link and Reseam Manager already show it. Relay checks every 20 seconds and posts anyway after 15 minutes. A release whose notes have no `feat`, `fix` or `perf` line counts as maintenance.
+A release is posted once the repository's index (`patches.json`, `manager.json`) lists it, so the link and Reseam Manager already show it. Relay checks every 20 seconds and posts anyway after 15 minutes. A release whose notes have no `feat`, `fix` or `perf` line counts as maintenance. Images and videos the notes list (`reseam release` adds the ones attached to the release's draft) go out with the post: up to four images on Discord, with videos as links it plays; an album on Telegram; up to four images or one video on X; links on Reddit. A post still goes out when its media cannot be attached.
 
 Events from private repositories are always dropped. That includes a fork into or out of one, CI runs, and packages without a repository.
 

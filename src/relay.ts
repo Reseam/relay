@@ -2,7 +2,7 @@ import type { ApiEvent } from "./api";
 import type { Announced } from "./announced";
 import type { Config, Settings } from "./config";
 import { repositoriesOf, type Event } from "./forgejo";
-import { releaseNotes } from "./notes";
+import { releaseMedia, releaseNotes } from "./notes";
 import { toNotice } from "./notice";
 import { listedNotes, toRelease, USER_FACING, type Release, type Timing } from "./release";
 import { discordFeed, discordPosts, discordRequests } from "./targets/discord";
@@ -63,7 +63,14 @@ export function createRelay(settings: Settings, feeds: Feeds, announced: Announc
   async function publish(release: Release) {
     const notes = await listedNotes(fetcher, release, timing);
     const kind = release.prerelease ? "prerelease" : notes === undefined || USER_FACING.test(notes) ? "release" : "maintenance";
-    post(feeds.releases, { kind, title: `${release.product} ${release.tag}`, body: releaseNotes(notes ?? release.notes), url: release.page.replace("{version}", release.version) });
+    const description = notes ?? release.notes;
+    post(feeds.releases, {
+      kind,
+      title: `${release.product} ${release.tag}`,
+      body: releaseNotes(description),
+      url: release.page.replace("{version}", release.version),
+      media: releaseMedia(description),
+    });
   }
 
   return {
@@ -87,7 +94,7 @@ export function createRelay(settings: Settings, feeds: Feeds, announced: Announc
     receive(event: ApiEvent) {
       if (event.type === "announcement") {
         const { id, title, content } = event.announcement;
-        post(feeds.announcements, { kind: "announcement", title, body: content ?? "", url: settings.api.announcement_page.replace("{id}", String(id)) });
+        post(feeds.announcements, { kind: "announcement", title, body: content ?? "", url: settings.api.announcement_page.replace("{id}", String(id)), media: [] });
         return;
       }
       const page = settings.api.request_page.replace("{id}", String(event.request.id));

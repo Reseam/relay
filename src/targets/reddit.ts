@@ -4,6 +4,8 @@ import { linkLabel, type PostTarget } from "./http";
 
 type RedditConfig = NonNullable<Config["reddit"]>;
 
+const MEDIA_LABELS = { image: "Image", animation: "Animation", video: "Video" };
+
 // Posts as the logged-in web session, since Reddit no longer issues API apps. Reddit blocks the session
 // unless the request has a browser's TLS fingerprint and the session was created from the server's IP;
 // posting stops when the session ends.
@@ -33,7 +35,12 @@ export function redditReleases(config: RedditConfig): PostTarget {
           kind: "self",
           api_type: "json",
           title: item.title,
-          text: `${item.body}\n\n[${linkLabel(item)}](${item.url})`,
+          // A text post cannot show media without Reddit's own upload, so it links to each.
+          text: [
+            item.body,
+            item.media.map((media) => `[${MEDIA_LABELS[media.kind]}](${media.url})`).join(" · "),
+            `[${linkLabel(item)}](${item.url})`,
+          ].filter(Boolean).join("\n\n"),
         }),
       });
       // Reddit reports a rejected post (flair required, rate limit, banned word) as 200 with errors.

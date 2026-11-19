@@ -7,7 +7,11 @@ type Embed = {
   description: string;
   color: number;
   author?: { name: string; url: string; icon_url: string };
+  image?: { url: string };
 };
+// Discord shows the images of embeds that share a url as one gallery, of four at most.
+type Picture = { url: string; image: { url: string } };
+const GALLERY = 4;
 
 const COLORS: Record<Tone, number> = { positive: 0x2ea043, negative: 0xd1242f, neutral: 0x5865f2 };
 
@@ -29,13 +33,24 @@ export function discordPosts(fetcher: typeof fetch, name: string, webhook: strin
   return {
     name,
     platform: "discord",
-    send: (item) =>
-      post(fetcher, webhook, {
-        title: truncate(item.title, 256),
-        url: item.url,
-        description: truncate(item.body, 4096),
-        color: item.kind === "announcement" ? COLORS.neutral : COLORS.positive,
-      }),
+    send: (item) => {
+      const [first, ...rest] = item.media.filter((media) => media.kind !== "video").slice(0, GALLERY);
+      // An embed cannot play a video; Discord plays a video whose link is in the message.
+      const videos = item.media.filter((media) => media.kind === "video").map((media) => media.url);
+      return post(
+        fetcher,
+        webhook,
+        {
+          title: truncate(item.title, 256),
+          url: item.url,
+          description: truncate(item.body, 4096),
+          color: item.kind === "announcement" ? COLORS.neutral : COLORS.positive,
+          image: first && { url: first.url },
+        },
+        rest.map((picture) => ({ url: item.url, image: { url: picture.url } })),
+        videos.join("\n"),
+      );
+    },
   };
 }
 
@@ -55,12 +70,12 @@ export function discordRequests(fetcher: typeof fetch, webhook: string): Request
   };
 }
 
-async function post(fetcher: typeof fetch, webhook: string, embed: Embed) {
+async function post(fetcher: typeof fetch, webhook: string, embed: Embed, gallery: Picture[] = [], content = "") {
   // Commit messages and issue text are user content: never let them ping anyone.
   await request(fetcher, webhook, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+    body: JSON.stringify({ content, embeds: [embed, ...gallery], allowed_mentions: { parse: [] } }),
   });
 }
 
