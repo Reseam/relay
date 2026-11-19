@@ -2,7 +2,7 @@ import type { ApiEvent } from "./api";
 import type { Announced } from "./announced";
 import type { Config, Settings } from "./config";
 import { repositoriesOf, type Event } from "./forgejo";
-import { releaseMedia, releaseNotes } from "./notes";
+import { releaseMedia, releaseNotes, withoutMedia } from "./notes";
 import { toNotice } from "./notice";
 import { listedNotes, toRelease, USER_FACING, type Release, type Timing } from "./release";
 import { discordFeed, discordPosts, discordRequests } from "./targets/discord";
@@ -94,7 +94,9 @@ export function createRelay(settings: Settings, feeds: Feeds, announced: Announc
     receive(event: ApiEvent) {
       if (event.type === "announcement") {
         const { id, title, content } = event.announcement;
-        post(feeds.announcements, { kind: "announcement", title, body: content ?? "", url: settings.api.announcement_page.replace("{id}", String(id)), media: [] });
+        const text = content ?? "";
+        const url = settings.api.announcement_page.replace("{id}", String(id));
+        post(feeds.announcements, { kind: "announcement", title, body: withoutMedia(text), url, media: releaseMedia(text) });
         return;
       }
       const page = settings.api.request_page.replace("{id}", String(event.request.id));

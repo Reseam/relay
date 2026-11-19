@@ -18,6 +18,10 @@ function scopeName(scope: string) {
 }
 
 /** The images and videos a release shows: `reseam release` lists each as a Markdown image on a line of its own. */
+export function withoutMedia(text: string) {
+  return text.split("\n").filter((line) => !MEDIA.test(line)).join("\n").trim();
+}
+
 export function releaseMedia(description: string): Media[] {
   return description.split("\n").flatMap((line) => {
     const [, name, url] = MEDIA.exec(line) ?? [];
